@@ -1,0 +1,299 @@
+-- SILENT XP - MOBILE ASSIST (AIM + HIGHLIGHT ESP)
+-- AIM MODE: HEAD / BODY
+-- INTRO + MENU ANIMATION + RAINBOW BORDER
+-- MENU IMAGE BUTTON (CIRCULAR)
+
+local Players = game:GetService("Players")
+local UIS = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local Workspace = game:GetService("Workspace")
+local TweenService = game:GetService("TweenService")
+
+local player = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+if not UIS.TouchEnabled then return end
+
+-- ================== AUTO ON ==================
+local aimAssist  = true
+local espEnabled = true
+local aimMode = "Head" -- Head | Body
+
+-- ================= INTRO =====================
+local gui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+gui.Name = "SilentXP"
+gui.ResetOnSpawn = false
+
+local introText = Instance.new("TextLabel", gui)
+introText.Size = UDim2.new(1,0,0,60)
+introText.Position = UDim2.new(0,0,0.45,0)
+introText.BackgroundTransparency = 1
+introText.Text = "Script By SilentXP"
+introText.Font = Enum.Font.GothamBold
+introText.TextSize = 36
+introText.TextTransparency = 1
+introText.TextStrokeTransparency = 1
+
+local menuEnabled = false
+
+task.spawn(function()
+task.wait(0.5)
+
+TweenService:Create(introText,TweenInfo.new(0.8),
+{TextTransparency = 0, TextStrokeTransparency = 0.3}
+):Play()
+
+local h = 0
+local c
+c = RunService.RenderStepped:Connect(function(dt)
+h = (h + dt*0.25) % 1
+introText.TextColor3 = Color3.fromHSV(h,1,1)
+end)
+
+task.wait(2)
+
+TweenService:Create(introText,TweenInfo.new(0.6),
+{TextTransparency = 1, TextStrokeTransparency = 1}
+):Play()
+
+task.wait(0.6)
+c:Disconnect()
+introText:Destroy()
+menuEnabled = true
+
+end)
+
+-- ================= MENU TRÒN (IMAGE) =================
+local IMAGE_ID = "84715305604312"
+
+local toggleBtn = Instance.new("ImageButton", gui)
+toggleBtn.Size = UDim2.fromOffset(60,60)
+toggleBtn.Position = UDim2.new(0,15,0.5,-30)
+toggleBtn.Image = "rbxassetid://"..IMAGE_ID
+toggleBtn.BackgroundTransparency = 1
+toggleBtn.AutoButtonColor = false
+toggleBtn.Visible = false
+toggleBtn.ZIndex = 10
+
+Instance.new("UICorner", toggleBtn).CornerRadius = UDim.new(1,0)
+
+local btnStroke = Instance.new("UIStroke", toggleBtn)
+btnStroke.Thickness = 2
+
+RunService.RenderStepped:Connect(function()
+btnStroke.Color = Color3.fromHSV(tick()*0.35 % 1,1,1)
+end)
+
+-- Drag mobile + PC
+local dragging, dragStart, startPos
+
+toggleBtn.InputBegan:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.Touch
+or input.UserInputType == Enum.UserInputType.MouseButton1 then
+dragging = true
+dragStart = input.Position
+startPos = toggleBtn.Position
+end
+end)
+
+toggleBtn.InputEnded:Connect(function(input)
+if input.UserInputType == Enum.UserInputType.Touch
+or input.UserInputType == Enum.UserInputType.MouseButton1 then
+dragging = false
+end
+end)
+
+UIS.InputChanged:Connect(function(input)
+if dragging and (input.UserInputType == Enum.UserInputType.Touch
+or input.UserInputType == Enum.UserInputType.MouseMovement) then
+local delta = input.Position - dragStart
+toggleBtn.Position = UDim2.new(
+startPos.X.Scale,
+startPos.X.Offset + delta.X,
+startPos.Y.Scale,
+startPos.Y.Offset + delta.Y
+)
+end
+end)
+
+-- ================= MENU FRAME =================
+local frame = Instance.new("Frame", gui)
+frame.Size = UDim2.new(0,260,0,215)
+frame.Position = UDim2.new(0.5,-130,0.5,-110)
+frame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+frame.Visible = false
+frame.Active = true
+frame.Draggable = true
+frame.BackgroundTransparency = 1
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0,12)
+
+local scale = Instance.new("UIScale", frame)
+scale.Scale = 0.85
+
+local stroke = Instance.new("UIStroke", frame)
+stroke.Thickness = 2
+stroke.Transparency = 1
+
+RunService.RenderStepped:Connect(function()
+if frame.Visible then
+stroke.Color = Color3.fromHSV(tick()*0.3 % 1,1,1)
+end
+end)
+
+local opened = false
+local function openMenu()
+frame.Visible = true
+TweenService:Create(scale,TweenInfo.new(0.25,Enum.EasingStyle.Back),{Scale = 1}):Play()
+TweenService:Create(frame,TweenInfo.new(0.25),{BackgroundTransparency = 0}):Play()
+TweenService:Create(stroke,TweenInfo.new(0.25),{Transparency = 0}):Play()
+end
+
+local function closeMenu()
+TweenService:Create(scale,TweenInfo.new(0.2),{Scale = 0.85}):Play()
+TweenService:Create(frame,TweenInfo.new(0.2),{BackgroundTransparency = 1}):Play()
+TweenService:Create(stroke,TweenInfo.new(0.2),{Transparency = 1}):Play()
+task.delay(0.2,function() frame.Visible = false end)
+end
+
+toggleBtn.MouseButton1Click:Connect(function()
+opened = not opened
+if opened then openMenu() else closeMenu() end
+end)
+
+RunService.RenderStepped:Connect(function()
+if menuEnabled and not toggleBtn.Visible then
+toggleBtn.Visible = true
+openMenu()
+opened = true
+end
+end)
+
+-- ================= UI CONTENT =================
+local title = Instance.new("TextLabel", frame)
+title.Size = UDim2.new(1,0,0,35)
+title.BackgroundTransparency = 1
+title.Text = "SILENT XP"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 18
+title.TextColor3 = Color3.new(1,1,1)
+
+local function createButton(text, y, state)
+local b = Instance.new("TextButton", frame)
+b.Size = UDim2.new(0.9,0,0,40)
+b.Position = UDim2.new(0.05,0,0,y)
+b.BackgroundColor3 = Color3.fromRGB(45,45,45)
+b.TextColor3 = Color3.new(1,1,1)
+b.Font = Enum.Font.Gotham
+b.TextSize = 14
+b.Text = text.." : "..(state and "ON" or "OFF")
+Instance.new("UICorner", b)
+return b
+end
+
+local aimBtn = createButton("Aim Assist",45,aimAssist)
+local espBtn = createButton("ESP Highlight",95,espEnabled)
+local aimModeBtn = createButton("Aim Mode",145,true)
+aimModeBtn.Text = "Aim Mode : HEAD"
+
+aimBtn.MouseButton1Click:Connect(function()
+aimAssist = not aimAssist
+aimBtn.Text = "Aim Assist : "..(aimAssist and "ON" or "OFF")
+end)
+
+aimModeBtn.MouseButton1Click:Connect(function()
+if aimMode == "Head" then
+aimMode = "Body"
+aimModeBtn.Text = "Aim Mode : BODY"
+else
+aimMode = "Head"
+aimModeBtn.Text = "Aim Mode : HEAD"
+end
+end)
+
+-- ================= ENEMY CHECK =================
+local function isEnemy(plr)
+if plr == player then return false end
+if not plr.Character then return false end
+if plr.Team and player.Team and plr.Team == player.Team then return false end
+return true
+end
+
+-- ================= AIM ASSIST ==================
+local AIM_RADIUS, AIM_POWER, MAX_DISTANCE = 160, 0.55, 100
+
+local function getAimPart(char)
+if aimMode == "Head" then
+return char:FindFirstChild("Head")
+else
+return char:FindFirstChild("UpperTorso")
+or char:FindFirstChild("HumanoidRootPart")
+end
+end
+
+local function canSeeTarget(part)
+local params = RaycastParams.new()
+params.FilterType = Enum.RaycastFilterType.Blacklist
+params.FilterDescendantsInstances = {player.Character}
+local r = Workspace:Raycast(Camera.CFrame.Position, part.Position-Camera.CFrame.Position, params)
+return r and r.Instance:IsDescendantOf(part.Parent)
+end
+
+RunService.RenderStepped:Connect(function()
+if not aimAssist then return end
+local closest, dist = nil, math.huge
+local center = Vector2.new(Camera.ViewportSize.X/2,Camera.ViewportSize.Y/2)
+
+for _,plr in pairs(Players:GetPlayers()) do
+if isEnemy(plr) and plr.Character then
+local part = getAimPart(plr.Character)
+if not part then continue end
+if (part.Position-Camera.CFrame.Position).Magnitude > MAX_DISTANCE then continue end
+
+local pos,vis = Camera:WorldToViewportPoint(part.Position)    
+	if vis and canSeeTarget(part) then    
+		local d = (Vector2.new(pos.X,pos.Y)-center).Magnitude    
+		if d < AIM_RADIUS and d < dist then    
+			dist, closest = d, part    
+		end    
+	end    
+end
+
+end
+
+if closest then
+Camera.CFrame = Camera.CFrame:Lerp(
+CFrame.new(Camera.CFrame.Position, closest.Position),
+AIM_POWER
+)
+end
+
+end)
+
+-- ================= ESP ========================
+local highlights = {}
+
+espBtn.MouseButton1Click:Connect(function()
+espEnabled = not espEnabled
+espBtn.Text = "ESP Highlight : "..(espEnabled and "ON" or "OFF")
+for _,h in pairs(highlights) do if h then h:Destroy() end end
+highlights = {}
+end)
+
+RunService.RenderStepped:Connect(function()
+if not espEnabled then return end
+for _,plr in pairs(Players:GetPlayers()) do
+if isEnemy(plr) and plr.Character and not highlights[plr] then
+local hl = Instance.new("Highlight", plr.Character)
+hl.FillTransparency = 0.5
+hl.FillColor = Color3.fromRGB(255,80,80)
+hl.OutlineColor = Color3.new(1,1,1)
+hl.Adornee = plr.Character
+highlights[plr] = hl
+end
+end
+end)
+
+player.CharacterAdded:Connect(function()
+for _,h in pairs(highlights) do if h then h:Destroy() end end
+highlights = {}
+end)
